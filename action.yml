@@ -1,0 +1,9 @@
+name: "YAMPL Temp Environment Deploy"
+description: "Creates a temporary environment via YAMPL"
+author: "Mitchell"
+runs:
+  using: "node18"
+  main: "main.js"
+branding:
+  icon: upload-cloud
+  color: green
