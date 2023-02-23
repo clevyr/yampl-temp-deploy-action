@@ -1,0 +1,24 @@
+name: "Get PR Number"
+
+on:
+  workflow_call:
+    outputs:
+      pr: 
+        description: "The PR number"
+        value: ${{ jobs.get-pr.outputs.pr }}
+jobs:
+  get-pr:
+    name: Get PR
+    runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.findPr.outputs.number }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+        with:
+          state: all
+      - run: echo "Your PR is ${PR}"
+        if: success() && steps.findPr.outputs.number
+        env:
+          PR: ${{ steps.findPr.outputs.pr }}

@@ -1,9 +1,45 @@
 name: "YAMPL Temp Environment Deploy"
 description: "Creates a temporary environment via YAMPL"
-author: "Mitchell"
+author: "Mitchell Scott"
+
+inputs:
+  commit_message:
+    description: If set, this action will invoke stefanzweifel/git-auto-commit-action with the given commit message.
+    default: ":rocket: Create temp deployment for PR ${{ github.event.pull_request.number }}"
+  yampl_values:
+    description: List of values to replace in the provided file.
+    required: true
+  dest-path: 
+    description: Path to the directory that should be patched.
+    required: true
+  template-path: 
+    description: Path to the directory housing the templates.
+    required: true
+  repository: 
+    description: Repository to check out and commit to
+    required: true
+  branch: 
+    description: Optional, branch to commit to
+    required: false
+  repo-token: 
+    description: Token to authenticate to the target repository
+    required: true
+
 runs:
-  using: "node18"
-  main: "main.js"
-branding:
-  icon: upload-cloud
-  color: green
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ inputs.repository }}
+        token: ${{ inputs.repo-token }}
+    - name: Copy template to destination
+      run: mkdir -p ${{ inputs.dest-path }}/temp${{ github.event.pull_request.number }} && cp -r ${{ inputs.template-path }}/* ${{ inputs.dest-path }}/temp${{ github.event.pull_request.number }}
+      shell: bash
+    - name: Template with YAMPL
+      uses: clevyr/yampl-action@v1
+      with:
+        file: ${{ inputs.dest-path }}/temp${{ github.event.pull_request.number }}/**/*.yaml
+        values: ${{ inputs.yampl_values }}
+        commit_message: ${{ inputs.commit_message }}
+        commit_branch: ${{ inputs.branch }}

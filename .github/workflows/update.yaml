@@ -1,0 +1,67 @@
+name: "Update Temp Environment"
+
+on:
+  workflow_call:
+    inputs:
+      commit_message: 
+        description: "Commit message for the commit step"
+        required: false
+        default: ""
+        type: string
+      commit_branch: 
+        description: "Target branch for commit step"
+        required: false
+        default: ""
+        type: string
+      file-path:
+        required: true
+        type: string
+      repository:
+        required: true
+        type: string
+      pr:
+        required: true
+        type: string
+      tag: 
+        description: Image tag to bump
+        required: true
+        type: string
+    secrets:
+      repo-token:
+        required: true
+jobs:
+  update-temp:
+    name: Update Temp Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set commit message 
+        id: get-message
+        env:
+          COMMIT_MESSAGE: ${{ inputs.commit_message }}
+        run: |
+          if [ -n "$COMMIT_MESSAGE" ]; then
+            echo "commit_msg=$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          else
+            echo "commit_msg=:arrow_up: Bump temp${{ inputs.pr }} ${{ github.event.repository.name }} to ${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
+          token: ${{ secrets.repo-token }}
+      - name: "Check file existence"
+        id: filecheck
+        uses: andstor/file-existence-action@v2
+        with:
+          files: ${{ inputs.file-path }}
+      - name: Bump version
+        uses: clevyr/yampl-action@v1
+        if: steps.filecheck.outputs.files_exists == 'true'
+        with:
+          file: ${{ inputs.file-path }}
+          values: |
+            tag=${{ inputs.tag }}
+          commit_message: "${{ steps.get-message.outputs.commit_msg }}"
+          commit_branch: ${{ inputs.commit_branch }}
+  
